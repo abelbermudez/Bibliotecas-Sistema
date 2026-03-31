@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{02E0ED79-FC35-41A4-9449-3606150ADE20}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Bibliotecas_Sistema</RootNamespace>
+    <AssemblyName>Bibliotecas Sistema</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Conexion.cs" />
+    <Compile Include="Formacercade.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formacercade.Designer.cs">
+      <DependentUpon>Formacercade.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormAdmin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormAdmin.Designer.cs">
+      <DependentUpon>FormAdmin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formbuscarlibros.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formbuscarlibros.Designer.cs">
+      <DependentUpon>Formbuscarlibros.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formcategoria.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formcategoria.Designer.cs">
+      <DependentUpon>Formcategoria.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formdevoluciones.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formdevoluciones.Designer.cs">
+      <DependentUpon>Formdevoluciones.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formlectores.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formlectores.Designer.cs">
+      <DependentUpon>Formlectores.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormLibro.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormLibro.Designer.cs">
+      <DependentUpon>FormLibro.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formlibros.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formlibros.Designer.cs">
+      <DependentUpon>Formlibros.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formlogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formlogin.Designer.cs">
+      <DependentUpon>Formlogin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Formmisprestamos.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Formmisprestamos.Designer.cs">
+      <DependentUpon>Formmisprestamos.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormPrestamos.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormPrestamos.Designer.cs">
+      <DependentUpon>FormPrestamos.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormUsuario.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormUsuario.Designer.cs">
+      <DependentUpon>FormUsuario.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormUsuarioEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormUsuarios.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormUsuarios.Designer.cs">
+      <DependentUpon>FormUsuarios.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Formacercade.resx">
+      <DependentUpon>Formacercade.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormAdmin.resx">
+      <DependentUpon>FormAdmin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formbuscarlibros.resx">
+      <DependentUpon>Formbuscarlibros.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formcategoria.resx">
+      <DependentUpon>Formcategoria.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formdevoluciones.resx">
+      <DependentUpon>Formdevoluciones.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formlectores.resx">
+      <DependentUpon>Formlectores.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormLibro.resx">
+      <DependentUpon>FormLibro.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formlibros.resx">
+      <DependentUpon>Formlibros.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formlogin.resx">
+      <DependentUpon>Formlogin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Formmisprestamos.resx">
+      <DependentUpon>Formmisprestamos.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormPrestamos.resx">
+      <DependentUpon>FormPrestamos.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormUsuario.resx">
+      <DependentUpon>FormUsuario.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormUsuarioEditor.resx">
+      <DependentUpon>FormUsuarioEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormUsuarios.resx">
+      <DependentUpon>FormUsuarios.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\user-profile-login-or-access-authentication-icon-illustration-image-vector.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\17115.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-solid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\user-solid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-open-solid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\c4413e5e-87bb-4671-ae8f-c5ae1d430d81.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\dd35ac25-147f-47db-9c94-4fb9fd226657.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\65e9ee0d-4c13-4dfc-a1ed-a788959d07a7.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Gemini_Generated_Image_71cm5h71cm5h71cm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\8a4ff12d-ab11-40d6-954f-289374ecf403.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Gemini_Generated_Image_ocikm8ocikm8ocik.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\c8cc179e-c1c8-4804-bb14-142f7fbb4cff.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\clipboard-list-solid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\security-lock-flat-icon-by-Vexels.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Gemini_Generated_Image_pagjmdpagjmdpagj.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Captura de pantalla 2026-03-30 115457.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
