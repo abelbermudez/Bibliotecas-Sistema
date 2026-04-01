@@ -14,9 +14,11 @@ namespace Bibliotecas_Sistema
 {
     public partial class FormAdmin : Form
     {
-        public FormAdmin()
+        Form _LoginForm = new Form();
+        public FormAdmin(Form LoginForm)
         {
             InitializeComponent();
+            _LoginForm = LoginForm;
         }
 
         private void label1_Click(object sender, EventArgs e)
@@ -107,6 +109,15 @@ namespace Bibliotecas_Sistema
         private void label1_Click_1(object sender, EventArgs e)
         {
 
+        }
+
+        private void btnCerrarSesion_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("¿Está seguro que desea cerrar sesión?", "Confirmación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.No) return;
+
+            this.Close();
+            _LoginForm.Show();
         }
     }
 

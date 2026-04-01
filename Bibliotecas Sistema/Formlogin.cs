@@ -18,14 +18,13 @@ namespace Bibliotecas_Sistema
             InitializeComponent();
         }
 
-        private void Formlogin_Load(object sender, EventArgs e)
-        {
-
-        }
+        // Variables globales
+        public static int IdUsuarioLogueado;
+        public static string RolUsuario;
 
         private void bntingresar_Click(object sender, EventArgs e)
         {
-            if (txtusuario.Text == "" || txtcontraseña.Text == "")
+            if (string.IsNullOrEmpty(txtusuario.Text) || string.IsNullOrEmpty(txtcontraseña.Text))
             {
                 MessageBox.Show("Ingrese usuario y contraseña");
                 return;
@@ -36,7 +35,10 @@ namespace Bibliotecas_Sistema
                 if (Conexion.cn.State == System.Data.ConnectionState.Closed)
                     Conexion.cn.Open();
 
-                string query = "SELECT * FROM Tbl_Administradores WHERE Usuario=@u AND Clave=@c AND Activo=1";
+                string query = @"SELECT U.IdUsuario, R.NombreRol
+                             FROM Tbl_Usuarios U
+                             INNER JOIN Tbl_Roles R ON U.IdRol = R.IdRol
+                             WHERE U.Usuario=@u AND U.Clave=@c AND U.Activo=1";
 
                 SqlCommand cmd = new SqlCommand(query, Conexion.cn);
                 cmd.Parameters.AddWithValue("@u", txtusuario.Text);
@@ -46,21 +48,23 @@ namespace Bibliotecas_Sistema
 
                 if (dr.Read())
                 {
-                    string rol = dr["Rol"].ToString();
+                    IdUsuarioLogueado = Convert.ToInt32(dr["IdUsuario"]);
+                    RolUsuario = dr["NombreRol"].ToString();
 
-                    dr.Close(); 
+                    dr.Close();
 
-                    if (rol == "ADMIN")
+                    if (RolUsuario == "ADMIN")
                     {
-                        FormAdmin fa = new FormAdmin();
+                        FormAdmin fa = new FormAdmin(this);
                         fa.Show();
                     }
                     else
                     {
-                        FormUsuario fu = new FormUsuario();
+                        FormUsuario fu = new FormUsuario(this);
                         fu.Show();
                     }
 
+                    limpiarCampos(txtusuario, txtcontraseña);
                     this.Hide();
                 }
                 else
@@ -75,6 +79,12 @@ namespace Bibliotecas_Sistema
             {
                 MessageBox.Show("Error: " + ex.Message);
             }
+        }
+
+        private void limpiarCampos(TextBox txtusuario, TextBox txtcontraseña)
+        {
+            txtusuario.Clear();
+            txtcontraseña.Clear();
         }
     }
 }

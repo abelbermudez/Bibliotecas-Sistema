@@ -13,6 +13,10 @@ namespace Bibliotecas_Sistema
 {
     public partial class Formcategoria : Form
     {
+
+        private DataTable categoriasTable;
+        private BindingSource categoriasBinding;
+
         public Formcategoria()
         {
             InitializeComponent();
@@ -20,9 +24,16 @@ namespace Bibliotecas_Sistema
         void MostrarCategorias()
         {
             SqlDataAdapter da = new SqlDataAdapter("SELECT * FROM Tbl_Categorias", Conexion.cn);
-            DataTable dt = new DataTable();
-            da.Fill(dt);
-            dgvcategoria.DataSource = dt;
+            categoriasTable = new DataTable();
+            da.Fill(categoriasTable);
+
+            categoriasBinding = new BindingSource();
+            categoriasBinding.DataSource = categoriasTable;
+
+            dgvcategoria.DataSource = categoriasBinding;
+            dgvcategoria.AutoGenerateColumns = true;
+            dgvcategoria.AllowUserToAddRows = true;
+            dgvcategoria.ReadOnly = false;
         }
 
         private void Formcategoria_Load(object sender, EventArgs e)
@@ -32,26 +43,32 @@ namespace Bibliotecas_Sistema
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Conexion.cn.Open();
+            dgvcategoria.EndEdit();
+            dgvcategoria.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            categoriasBinding.EndEdit();
 
-            foreach (DataGridViewRow row in dgvcategoria.Rows)
+            var added = categoriasTable.GetChanges(DataRowState.Added);
+            if (added == null || added.Rows.Count == 0)
             {
-                if (row.IsNewRow) continue;
+                MessageBox.Show("No hay nuevas filas para guardar.");
+                return;
+            }
 
-                if (row.Cells["IdCategoria"].Value == null)
+            using (var conn = Conexion.GetOpenConnection())
+            {
+                foreach (DataRow row in added.Rows)
                 {
-                    SqlCommand cmd = new SqlCommand(
-                        "INSERT INTO Tbl_Categorias (Nombre, Descripcion) VALUES (@nom, @desc)",
-                        Conexion.cn);
-
-                    cmd.Parameters.AddWithValue("@nom", row.Cells["Nombre"].Value ?? "");
-                    cmd.Parameters.AddWithValue("@desc", row.Cells["Descripcion"].Value ?? "");
-
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand(
+                        "INSERT INTO Tbl_Categorias (Nombre, Descripcion) VALUES (@nom, @desc)", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@nom", row["Nombre"] ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@desc", row["Descripcion"] ?? DBNull.Value);
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
 
-            Conexion.cn.Close();
+            categoriasTable.AcceptChanges();
             MostrarCategorias();
         }
 
@@ -76,7 +93,7 @@ namespace Bibliotecas_Sistema
                     cmd.ExecuteNonQuery();
                 }
             }
-
+            MessageBox.Show("Categoría actualizada correctamente", "Actualización", MessageBoxButtons.OK, MessageBoxIcon.Information);
             Conexion.cn.Close();
             MostrarCategorias();
         }
@@ -85,16 +102,47 @@ namespace Bibliotecas_Sistema
         {
             if (dgvcategoria.CurrentRow == null) return;
 
-            int id = Convert.ToInt32(dgvcategoria.CurrentRow.Cells["IdCategoria"].Value);
+            var cellValue = dgvcategoria.CurrentRow.Cells["IdCategoria"].Value;
+            if (cellValue == null || cellValue == DBNull.Value)
+            {
+                MessageBox.Show("No hay IdCategoria válido en la fila seleccionada.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            Conexion.cn.Open();
+            if (!int.TryParse(cellValue.ToString(), out int id))
+            {
+                MessageBox.Show("IdCategoria inválido.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            SqlCommand cmd = new SqlCommand("DELETE FROM Tbl_Categorias WHERE IdCategoria=@id", Conexion.cn);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
+            DialogResult result = MessageBox.Show("¿Está seguro que desea eliminar la categoría?",
+                                                  "Confirmación",
+                                                  MessageBoxButtons.YesNo,
+                                                  MessageBoxIcon.Question);
+            if (result != DialogResult.Yes) return;
 
-            Conexion.cn.Close();
-            MostrarCategorias();
+            try
+            {
+                using (SqlConnection cn = Conexion.GetOpenConnection())
+                using (SqlCommand cmd = new SqlCommand("DELETE FROM Tbl_Categorias WHERE IdCategoria=@id", cn))
+                {
+                    cmd.Parameters.AddWithValue("@id", id);
+                    int affected = cmd.ExecuteNonQuery();
+
+                    if (affected == 0)
+                        MessageBox.Show("No se eliminó ninguna fila. Verifique el Id.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else
+                        MessageBox.Show("Categoría eliminada.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al eliminar: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                MostrarCategorias();
+            }
         }
     }
 }

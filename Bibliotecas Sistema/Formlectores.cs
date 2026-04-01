@@ -23,17 +23,36 @@ namespace Bibliotecas_Sistema
 
         void MostrarLectores()
         {
-            SqlDataAdapter da = new SqlDataAdapter("SELECT * FROM Tbl_Usuarios", Conexion.cn);
+            string query = @"
+            SELECT 
+                P.IdPerfil,
+                P.Dni,
+                P.PrimerNombre,
+                P.SegundoNombre,
+                P.PrimerApellido,
+                P.SegundoApellido,
+                P.NumeroDocumento,
+                P.Correo,
+                P.Telefono,
+                P.Direccion,
+                P.FechaNacimiento,
+                P.Activo,
+                U.IdUsuario,
+                U.Usuario
+            FROM Tbl_Perfiles P
+            INNER JOIN Tbl_Usuarios U ON P.IdUsuario = U.IdUsuario
+            INNER JOIN Tbl_Roles R ON U.IdRol = R.IdRol
+            WHERE R.NombreRol = 'USER' AND P.Activo = 1";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, Conexion.cn);
             DataTable dt = new DataTable();
             da.Fill(dt);
-            lectoresTable = dt;
-            dgvlectores.AutoGenerateColumns = true;
-            dgvlectores.AllowUserToAddRows = true;
-            dgvlectores.ReadOnly = false;
 
-            lectoresBinding = new BindingSource();
-            lectoresBinding.DataSource = lectoresTable;
-            dgvlectores.DataSource = lectoresBinding;
+            lectoresTable = dt;
+            dgvlectores.DataSource = lectoresTable;
+
+            dgvlectores.Columns["IdPerfil"].Visible = false;
+            dgvlectores.Columns["IdUsuario"].Visible = false;
         }
 
         private void Formlectores_Load(object sender, EventArgs e)
@@ -41,232 +60,188 @@ namespace Bibliotecas_Sistema
             MostrarLectores();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnGuardar_Click(object sender, EventArgs e)
         {
             try
             {
-                if (lectoresTable == null)
-                {
-                    MessageBox.Show("No hay datos cargados.");
-                    return;
-                }
-                // Ensure the grid commits any current edits into the underlying DataTable
                 dgvlectores.EndEdit();
-                dgvlectores.CommitEdit(DataGridViewDataErrorContexts.Commit);
-                if (lectoresBinding != null)
-                    lectoresBinding.EndEdit();
-                else if (this.BindingContext[lectoresTable] != null)
-                    this.BindingContext[lectoresTable].EndCurrentEdit();
-
                 var added = lectoresTable.GetChanges(DataRowState.Added);
-                if (added == null || added.Rows.Count == 0)
-                {
-                    MessageBox.Show("No hay nuevas filas para guardar.");
-                    return;
-                }
 
-                // Check required columns exist in the datatable
-                string[] required = new[] { "Dni", "PrimerNombre", "SegundoNombre", "PrimerApellido", "SegundoApellido", "NumeroDocumento", "Correo", "Telefono", "Direccion", "FechaNacimiento" };
-                foreach (var col in required)
+                if (added == null)
                 {
-                    if (!lectoresTable.Columns.Contains(col))
-                    {
-                        MessageBox.Show($"La columna '{col}' no existe en la tabla de datos. Verifique los nombres de columnas.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    MessageBox.Show("No hay nuevos registros.");
+                    return;
                 }
 
                 using (SqlConnection cn = Conexion.GetOpenConnection())
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         foreach (DataRow row in added.Rows)
                         {
-                            string query = @"INSERT INTO Tbl_Usuarios 
-                                (Dni, PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido, NumeroDocumento, Correo, Telefono, Direccion, FechaNacimiento) 
-                                VALUES (@dni, @nom, @nom2, @ape, @ape2, @nc, @co, @tel, @di, @fc)";
+                            // 1. Crear usuario con rol USER
+                            string queryUser = @"
+                    INSERT INTO Tbl_Usuarios (Usuario, Clave, IdRol, Activo)
+                    VALUES (@usuario, '1234',
+                    (SELECT IdRol FROM Tbl_Roles WHERE NombreRol='USER'), 1);
+                    SELECT SCOPE_IDENTITY();";
 
-                            using (SqlCommand cmd = new SqlCommand(query, cn, tran))
-                            {
-                                cmd.Parameters.AddWithValue("@dni", row["Dni"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@nom", row["PrimerNombre"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@nom2", row["SegundoNombre"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@ape", row["PrimerApellido"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@ape2", row["SegundoApellido"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@nc", row["NumeroDocumento"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@co", row["Correo"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@tel", row["Telefono"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@di", row["Direccion"] ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@fc", row["FechaNacimiento"] ?? DBNull.Value);
+                            SqlCommand cmdUser = new SqlCommand(queryUser, cn, tran);
+                            cmdUser.Parameters.AddWithValue("@usuario", row["Dni"].ToString());
 
-                                cmd.ExecuteNonQuery();
-                            }
+                            int idUsuario = Convert.ToInt32(cmdUser.ExecuteScalar());
+
+                            // 2. Crear perfil
+                            string queryPerfil = @"
+                    INSERT INTO Tbl_Perfiles
+                    (Dni, PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido,
+                     NumeroDocumento, Correo, Telefono, Direccion, FechaNacimiento, Activo, IdUsuario)
+                    VALUES
+                    (@dni, @nom, @nom2, @ape, @ape2,
+                     @ndoc, @correo, @tel, @dir, @fecha, 1, @idUsuario)";
+
+                            SqlCommand cmdPerfil = new SqlCommand(queryPerfil, cn, tran);
+
+                            cmdPerfil.Parameters.AddWithValue("@dni", row["Dni"]);
+                            cmdPerfil.Parameters.AddWithValue("@nom", row["PrimerNombre"]);
+                            cmdPerfil.Parameters.AddWithValue("@nom2", row["SegundoNombre"]);
+                            cmdPerfil.Parameters.AddWithValue("@ape", row["PrimerApellido"]);
+                            cmdPerfil.Parameters.AddWithValue("@ape2", row["SegundoApellido"]);
+                            cmdPerfil.Parameters.AddWithValue("@ndoc", row["NumeroDocumento"]);
+                            cmdPerfil.Parameters.AddWithValue("@correo", row["Correo"]);
+                            cmdPerfil.Parameters.AddWithValue("@tel", row["Telefono"]);
+                            cmdPerfil.Parameters.AddWithValue("@dir", row["Direccion"]);
+                            cmdPerfil.Parameters.AddWithValue("@fecha", row["FechaNacimiento"]);
+                            cmdPerfil.Parameters.AddWithValue("@idUsuario", idUsuario);
+
+                            cmdPerfil.ExecuteNonQuery();
                         }
 
                         tran.Commit();
+                        MessageBox.Show("Lectores guardados correctamente");
                         lectoresTable.AcceptChanges();
-                        MessageBox.Show("Guardado correctamente");
                     }
                     catch (Exception ex)
                     {
                         tran.Rollback();
-                        throw;
+                        MessageBox.Show("Error: " + ex.Message);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al guardar: " + ex.Message);
+                MessageBox.Show("Error: " + ex.Message);
             }
-            finally { MostrarLectores(); }
 
+            MostrarLectores();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void btnEditar_Click(object sender, EventArgs e)
         {
-            // Update existing records using the DataTable change tracking
             try
             {
-                if (lectoresTable == null)
-                {
-                    MessageBox.Show("No hay datos cargados para actualizar.");
-                    return;
-                }
-
-                // Ensure any current edit in the grid is committed to the DataTable
                 dgvlectores.EndEdit();
-
                 var modified = lectoresTable.GetChanges(DataRowState.Modified);
-                if (modified == null || modified.Rows.Count == 0)
+
+                if (modified == null)
                 {
-                    MessageBox.Show("No hay cambios para actualizar.");
+                    MessageBox.Show("No hay cambios.");
                     return;
                 }
 
                 using (SqlConnection cn = Conexion.GetOpenConnection())
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         foreach (DataRow row in modified.Rows)
                         {
-                            string query = "UPDATE Tbl_Usuarios SET Dni=@dni, PrimerNombre=@pnom, SegundoNombre=@snom, PrimerApellido=@pape, SegundoApellido=@sape, NumeroDocumento=@nc, Correo=@co, Telefono=@tel, Direccion=@di, FechaNacimiento=@fc WHERE Id_Usuario=@id";
-                            using (var cmd = new SqlCommand(query, cn, tran))
-                            {
-                                cmd.Parameters.AddWithValue("@id", row["Id_Usuario"]);
-                                cmd.Parameters.AddWithValue("@dni", lectoresTable.Columns.Contains("Dni") ? (row["Dni"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@pnom", lectoresTable.Columns.Contains("PrimerNombre") ? (row["PrimerNombre"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@snom", lectoresTable.Columns.Contains("SegundoNombre") ? (row["SegundoNombre"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@pape", lectoresTable.Columns.Contains("PrimerApellido") ? (row["PrimerApellido"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@sape", lectoresTable.Columns.Contains("SegundoApellido") ? (row["SegundoApellido"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@nc", lectoresTable.Columns.Contains("NumeroDocumento") ? (row["NumeroDocumento"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@co", lectoresTable.Columns.Contains("Correo") ? (row["Correo"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@tel", lectoresTable.Columns.Contains("Telefono") ? (row["Telefono"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@di", lectoresTable.Columns.Contains("Direccion") ? (row["Direccion"] ?? "") : "");
-                                cmd.Parameters.AddWithValue("@fc", lectoresTable.Columns.Contains("FechaNacimiento") ? (row["FechaNacimiento"] ?? "") : "");
+                            string query = @"
+                    UPDATE Tbl_Perfiles SET
+                    Dni=@dni,
+                    PrimerNombre=@nom,
+                    SegundoNombre=@nom2,
+                    PrimerApellido=@ape,
+                    SegundoApellido=@ape2,
+                    NumeroDocumento=@ndoc,
+                    Correo=@correo,
+                    Telefono=@tel,
+                    Direccion=@dir,
+                    FechaNacimiento=@fecha
+                    WHERE IdPerfil=@id";
 
-                                cmd.ExecuteNonQuery();
-                            }
+                            SqlCommand cmd = new SqlCommand(query, cn, tran);
+
+                            cmd.Parameters.AddWithValue("@id", row["IdPerfil"]);
+                            cmd.Parameters.AddWithValue("@dni", row["Dni"]);
+                            cmd.Parameters.AddWithValue("@nom", row["PrimerNombre"]);
+                            cmd.Parameters.AddWithValue("@nom2", row["SegundoNombre"]);
+                            cmd.Parameters.AddWithValue("@ape", row["PrimerApellido"]);
+                            cmd.Parameters.AddWithValue("@ape2", row["SegundoApellido"]);
+                            cmd.Parameters.AddWithValue("@ndoc", row["NumeroDocumento"]);
+                            cmd.Parameters.AddWithValue("@correo", row["Correo"]);
+                            cmd.Parameters.AddWithValue("@tel", row["Telefono"]);
+                            cmd.Parameters.AddWithValue("@dir", row["Direccion"]);
+                            cmd.Parameters.AddWithValue("@fecha", row["FechaNacimiento"]);
+
+                            cmd.ExecuteNonQuery();
                         }
 
                         tran.Commit();
+                        MessageBox.Show("Lectores actualizados");
                         lectoresTable.AcceptChanges();
-                        MessageBox.Show("Datos actualizados correctamente.");
                     }
                     catch (Exception ex)
                     {
                         tran.Rollback();
-                        MessageBox.Show("Error al actualizar: " + ex.Message);
+                        MessageBox.Show("Error: " + ex.Message);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al actualizar: " + ex.Message);
+                MessageBox.Show("Error: " + ex.Message);
             }
-            finally
-            {
-                MostrarLectores();
-            }
+
+            MostrarLectores();
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void btnEliminar_Click(object sender, EventArgs e)
         {
-            // Obtener la fila seleccionada (preferir SelectedRows si existe)
-            DataGridViewRow selectedRow = null;
-            if (dgvlectores.SelectedRows != null && dgvlectores.SelectedRows.Count > 0)
-                selectedRow = dgvlectores.SelectedRows[0];
-            else
-                selectedRow = dgvlectores.CurrentRow;
+            if (dgvlectores.CurrentRow == null) return;
 
-            if (selectedRow == null)
-            {
-                MessageBox.Show("No hay ninguna fila seleccionada.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            int idPerfil = Convert.ToInt32(dgvlectores.CurrentRow.Cells["IdPerfil"].Value);
+            int idUsuario = Convert.ToInt32(dgvlectores.CurrentRow.Cells["IdUsuario"].Value);
 
-            // Buscar la columna que contiene el Id (Id_Usuario) por Name o DataPropertyName
-            DataGridViewColumn idColumn = null;
-            foreach (DataGridViewColumn col in dgvlectores.Columns)
-            {
-                if (string.Equals(col.Name, "Id_Usuario", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(col.DataPropertyName, "Id_Usuario", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(col.HeaderText, "Id_Usuario", StringComparison.OrdinalIgnoreCase))
-                {
-                    idColumn = col;
-                    break;
-                }
-            }
-
-            if (idColumn == null)
-            {
-                MessageBox.Show("La columna Id_Usuario no se encuentra en la tabla.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var cellValue = selectedRow.Cells[idColumn.Index].Value;
-            if (cellValue == null || cellValue == DBNull.Value)
-            {
-                MessageBox.Show("Id_Usuario no está definido en la fila seleccionada.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!int.TryParse(cellValue.ToString(), out int id))
-            {
-                MessageBox.Show("Id_Usuario inválido.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var result = MessageBox.Show("¿Seguro que desea eliminar este lector?", "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var result = MessageBox.Show("¿Desactivar lector?", "Confirmar", MessageBoxButtons.YesNo);
             if (result != DialogResult.Yes) return;
 
             try
             {
                 using (SqlConnection cn = Conexion.GetOpenConnection())
-                using (SqlCommand cmd = new SqlCommand("DELETE FROM Tbl_Usuarios WHERE Id_Usuario=@id", cn))
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    int affected = cmd.ExecuteNonQuery();
-                    if (affected == 0)
-                    {
-                        MessageBox.Show("No se eliminó ninguna fila. Verifique el Id.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Lector eliminado.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    SqlCommand cmd1 = new SqlCommand("UPDATE Tbl_Perfiles SET Activo = 0 WHERE IdPerfil=@id", cn, tran);
+                    cmd1.Parameters.AddWithValue("@id", idPerfil);
+                    cmd1.ExecuteNonQuery();
+
+                    SqlCommand cmd2 = new SqlCommand("UPDATE Tbl_Usuarios SET Activo = 0 WHERE IdUsuario=@id", cn, tran);
+                    cmd2.Parameters.AddWithValue("@id", idUsuario);
+                    cmd2.ExecuteNonQuery();
+
+                    tran.Commit();
                 }
+
+                MessageBox.Show("Lector desactivado");
+                MostrarLectores();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al eliminar: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                MostrarLectores();
+                MessageBox.Show("Error: " + ex.Message);
             }
         }
+
     }
     
 }

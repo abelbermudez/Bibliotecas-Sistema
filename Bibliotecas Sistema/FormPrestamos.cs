@@ -80,7 +80,6 @@ namespace Bibliotecas_Sistema
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
-            Conexion.cn.Open();
 
             foreach (DataGridViewRow row in dgvprestamos.Rows)
             {
