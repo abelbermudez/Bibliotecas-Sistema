@@ -18,6 +18,15 @@ namespace Bibliotecas_Sistema
         public FormPrestamos()
         {
             InitializeComponent();
+            // Evitar excepción en tiempo de ejecución si hay valores en la celda
+            // que no existen en la lista del ComboBox (DataGridViewComboBoxCell)
+            this.dgvprestamos.DataError += Dgvprestamos_DataError;
+        }
+
+        private void Dgvprestamos_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            // Ignorar errores de datos en la cuadrícula (por ejemplo, valor de celda no presente en ComboBox)
+            e.ThrowException = false;
         }
         void MostrarPrestamos()
         {
@@ -35,113 +44,173 @@ namespace Bibliotecas_Sistema
 
         private void FormPrestamos_Load(object sender, EventArgs e)
         {
-            MostrarPrestamos();
+            // Load lookup data first, then load prestamos and add combo columns
             CargarUsuarios();
             CargarLibros();
+            MostrarPrestamos();
             AgregarCombos();
         }
         void CargarUsuarios()
         {
-            SqlDataAdapter da = new SqlDataAdapter("SELECT Id_Usuario, PrimerNombre FROM Tbl_Usuarios", Conexion.cn);
-            dtUsuarios.Clear();
-            da.Fill(dtUsuarios);
+            try
+            {
+                dtUsuarios.Clear();
+                using (SqlConnection cn = Conexion.GetOpenConnection())
+                {
+                    SqlDataAdapter da = new SqlDataAdapter(
+                        "SELECT IdPerfil, PrimerNombre + ' ' + PrimerApellido AS Nombre FROM Tbl_Perfiles",
+                        cn);
+
+                    da.Fill(dtUsuarios);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar usuarios: " + ex.Message);
+            }
         }
         void CargarLibros()
         {
-            SqlDataAdapter da = new SqlDataAdapter("SELECT IdLibro, Titulo FROM Tbl_Libros", Conexion.cn);
-            dtLibros.Clear();
-            da.Fill(dtLibros);
+            try
+            {
+                dtLibros.Clear();
+                using (SqlConnection cn = Conexion.GetOpenConnection())
+                {
+                    SqlDataAdapter da = new SqlDataAdapter("SELECT IdLibro, Titulo FROM Tbl_Libros", cn);
+                    da.Fill(dtLibros);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar libros: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
         void AgregarCombos()
         {
-            dgvprestamos.Columns.Remove("IdUsuario");
-            dgvprestamos.Columns.Remove("IdLibro");
+            // Remove any existing combo columns we added previously
+            for (int i = dgvprestamos.Columns.Count - 1; i >= 0; i--)
+            {
+                var col = dgvprestamos.Columns[i];
+                if (string.Equals(col.Name, "cmbUsuario", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(col.Name, "cmbLibro", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(col.DataPropertyName, "IdUsuario", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(col.DataPropertyName, "IdLibro", StringComparison.OrdinalIgnoreCase))
+                {
+                    dgvprestamos.Columns.RemoveAt(i);
+                }
+            }
 
-            // Usuario
+            // Usuario combo
             DataGridViewComboBoxColumn cmbUsuario = new DataGridViewComboBoxColumn();
+            cmbUsuario.Name = "cmbUsuario";
             cmbUsuario.DataSource = dtUsuarios;
-            cmbUsuario.DisplayMember = "PrimerNombre";
-            cmbUsuario.ValueMember = "Id_Usuario";
+            cmbUsuario.DisplayMember = "Nombre";
+            cmbUsuario.ValueMember = "IdPerfil";
+            cmbUsuario.ValueType = typeof(int);
             cmbUsuario.DataPropertyName = "IdUsuario";
             cmbUsuario.HeaderText = "Usuario";
+            cmbUsuario.DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox;
+            try { dgvprestamos.Columns.Add(cmbUsuario); } catch { /* ignore add errors */ }
 
-            dgvprestamos.Columns.Add(cmbUsuario);
-
-            // Libro
+            // Libro combo
             DataGridViewComboBoxColumn cmbLibro = new DataGridViewComboBoxColumn();
+            cmbLibro.Name = "cmbLibro";
             cmbLibro.DataSource = dtLibros;
             cmbLibro.DisplayMember = "Titulo";
             cmbLibro.ValueMember = "IdLibro";
+            cmbLibro.ValueType = typeof(int);
             cmbLibro.DataPropertyName = "IdLibro";
             cmbLibro.HeaderText = "Libro";
-
-            dgvprestamos.Columns.Add(cmbLibro);
+            cmbLibro.DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox;
+            try { dgvprestamos.Columns.Add(cmbLibro); } catch { /* ignore add errors */ }
         }
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
+            dgvprestamos.EndEdit(); // 🔥 IMPORTANTE
 
             foreach (DataGridViewRow row in dgvprestamos.Rows)
             {
                 if (row.IsNewRow) continue;
 
-                if (row.Cells["IdPrestamo"].Value == null)
+                // 🔴 VALIDAR LIBRO
+                object valLibro = row.Cells["cmbLibro"].Value;
+                if (valLibro == null || valLibro.ToString() == "")
                 {
-                    
-                    if (row.Cells["IdLibro"].Value == null || row.Cells["IdLibro"].Value.ToString() == "")
+                    MessageBox.Show("Seleccione un libro válido");
+                    continue;
+                }
+
+                // 🔴 VALIDAR USUARIO (PERFIL)
+                object valUsuario = row.Cells["cmbUsuario"].Value;
+                if (valUsuario == null || valUsuario.ToString() == "")
+                {
+                    MessageBox.Show("Seleccione un usuario válido");
+                    continue;
+                }
+
+                int idLibro;
+                int idUsuario;
+
+                // 🔴 VALIDAR NÚMEROS
+                if (!int.TryParse(valLibro.ToString(), out idLibro))
+                {
+                    MessageBox.Show("IdLibro inválido");
+                    continue;
+                }
+
+                if (!int.TryParse(valUsuario.ToString(), out idUsuario))
+                {
+                    MessageBox.Show("Usuario inválido");
+                    continue;
+                }
+
+                // 🔥 VALIDAR STOCK
+                if (!HayStock(idLibro))
+                {
+                    MessageBox.Show("No hay stock disponible");
+                    continue;
+                }
+
+                // 🔥 GUARDAR CON TRANSACCIÓN
+                using (SqlConnection cn = Conexion.GetOpenConnection())
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
                     {
-                        MessageBox.Show("Seleccione un libro válido");
-                        continue;
-                    }
+                        // INSERTAR PRÉSTAMO
+                        using (SqlCommand cmd = new SqlCommand(
+                            "INSERT INTO Tbl_Prestamos (IdLibro, IdUsuario, Estado) VALUES (@libro, @usuario, 'PRESTADO')",
+                            cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@libro", idLibro);
+                            cmd.Parameters.AddWithValue("@usuario", idUsuario); // 👉 ESTE ES IdPerfil
+                            cmd.ExecuteNonQuery();
+                        }
 
-                    
-                    if (row.Cells["IdUsuario"].Value == null || row.Cells["IdUsuario"].Value.ToString() == "")
+                        // ACTUALIZAR STOCK
+                        using (SqlCommand cmdStock = new SqlCommand(
+                            "UPDATE Tbl_Libros SET StockTotal = StockTotal - 1 WHERE IdLibro=@id",
+                            cn, tran))
+                        {
+                            cmdStock.Parameters.AddWithValue("@id", idLibro);
+                            cmdStock.ExecuteNonQuery();
+                        }
+
+                        tran.Commit();
+                    }
+                    catch (Exception ex)
                     {
-                        MessageBox.Show("Seleccione un usuario válido");
-                        continue;
+                        tran.Rollback();
+                        MessageBox.Show("Error al guardar: " + ex.Message);
+                        return;
                     }
-
-                    int idLibro;
-                    int idUsuario;
-
-                    
-                    if (!int.TryParse(row.Cells["IdLibro"].Value.ToString(), out idLibro))
-                    {
-                        MessageBox.Show("IdLibro inválido");
-                        continue;
-                    }
-
-                    if (!int.TryParse(row.Cells["IdUsuario"].Value.ToString(), out idUsuario))
-                    {
-                        MessageBox.Show("IdUsuario inválido");
-                        continue;
-                    }
-
-                    
-                    if (!HayStock(idLibro))
-                    {
-                        MessageBox.Show("No hay stock disponible para este libro");
-                        continue;
-                    }
-
-                    
-                    SqlCommand cmd = new SqlCommand(
-                        "INSERT INTO Tbl_Prestamos (IdLibro, IdUsuario, Estado) VALUES (@libro, @usuario, 'PRESTADO')",
-                        Conexion.cn);
-
-                    cmd.Parameters.AddWithValue("@libro", idLibro);
-                    cmd.Parameters.AddWithValue("@usuario", idUsuario);
-
-                    cmd.ExecuteNonQuery();
-
-                    SqlCommand cmdStock = new SqlCommand(
-                        "UPDATE Tbl_Libros SET StockTotal = StockTotal - 1 WHERE IdLibro=@id",
-                        Conexion.cn);
-
-                    cmdStock.Parameters.AddWithValue("@id", idLibro);
-                    cmdStock.ExecuteNonQuery();
                 }
             }
+
+            MessageBox.Show("Préstamos guardados correctamente");
+            MostrarPrestamos();
+
         }
         private void btnDevolver_Click(object sender, EventArgs e)
         {
@@ -151,53 +220,98 @@ namespace Bibliotecas_Sistema
                 return;
             }
 
-            if (dgvprestamos.CurrentRow.Cells["IdPrestamo"].Value == null ||
-                dgvprestamos.CurrentRow.Cells["IdLibro"].Value == null)
+            // 🔴 VALIDAR DATOS
+            object valPrestamo = dgvprestamos.CurrentRow.Cells["IdPrestamo"].Value;
+            object valLibro = dgvprestamos.CurrentRow.Cells["IdLibro"].Value;
+
+            if (valPrestamo == null || valLibro == null)
             {
                 MessageBox.Show("Datos incompletos");
                 return;
             }
 
-            int idPrestamo = Convert.ToInt32(dgvprestamos.CurrentRow.Cells["IdPrestamo"].Value);
-            int idLibro = Convert.ToInt32(dgvprestamos.CurrentRow.Cells["IdLibro"].Value);
+            int idPrestamo;
+            int idLibro;
 
-            Conexion.cn.Open();
+            if (!int.TryParse(valPrestamo.ToString(), out idPrestamo))
+            {
+                MessageBox.Show("IdPrestamo inválido");
+                return;
+            }
 
-            // ACTUALIZAR PRÉSTAMO
-            SqlCommand cmd = new SqlCommand(
-                "UPDATE Tbl_Prestamos SET Estado='DEVUELTO', FechaDevolucionReal=GETDATE() WHERE IdPrestamo=@id",
-                Conexion.cn);
+            if (!int.TryParse(valLibro.ToString(), out idLibro))
+            {
+                MessageBox.Show("IdLibro inválido");
+                return;
+            }
 
-            cmd.Parameters.AddWithValue("@id", idPrestamo);
-            cmd.ExecuteNonQuery();
+            try
+            {
+                using (SqlConnection cn = Conexion.GetOpenConnection())
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 🔥 ACTUALIZAR PRÉSTAMO
+                        using (SqlCommand cmd = new SqlCommand(
+                            "UPDATE Tbl_Prestamos SET Estado='DEVUELTO', FechaDevolucionReal=GETDATE() WHERE IdPrestamo=@id",
+                            cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@id", idPrestamo);
+                            cmd.ExecuteNonQuery();
+                        }
 
-            // DEVOLVER STOCK
-            SqlCommand cmdStock = new SqlCommand(
-                "UPDATE Tbl_Libros SET StockTotal = StockTotal + 1 WHERE IdLibro=@id",
-                Conexion.cn);
+                        // 🔥 DEVOLVER STOCK
+                        using (SqlCommand cmdStock = new SqlCommand(
+                            "UPDATE Tbl_Libros SET StockTotal = StockTotal + 1 WHERE IdLibro=@id",
+                            cn, tran))
+                        {
+                            cmdStock.Parameters.AddWithValue("@id", idLibro);
+                            cmdStock.ExecuteNonQuery();
+                        }
 
-            cmdStock.Parameters.AddWithValue("@id", idLibro);
-            cmdStock.ExecuteNonQuery();
+                        tran.Commit();
+                        MessageBox.Show("Libro devuelto correctamente");
+                    }
+                    catch (Exception ex)
+                    {
+                        tran.Rollback();
+                        MessageBox.Show("Error en la devolución: " + ex.Message);
+                        return;
+                    }
+                }
 
-            Conexion.cn.Close();
-            MessageBox.Show("Libro devuelto");
-            MostrarPrestamos();
+                MostrarPrestamos();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error general: " + ex.Message);
+            }
         }
         bool HayStock(int idLibro)
         {
             int stock = 0;
 
-            SqlCommand cmd = new SqlCommand("SELECT StockTotal FROM Tbl_Libros WHERE IdLibro=@id", Conexion.cn);
-            cmd.Parameters.AddWithValue("@id", idLibro);
-
-            SqlDataReader dr = cmd.ExecuteReader();
-
-            if (dr.Read())
+            try
             {
-                stock = Convert.ToInt32(dr["StockTotal"]);
-            }
+                using (SqlConnection cn = Conexion.GetOpenConnection())
+                using (SqlCommand cmd = new SqlCommand("SELECT StockTotal FROM Tbl_Libros WHERE IdLibro=@id", cn))
+                {
+                    cmd.Parameters.AddWithValue("@id", idLibro);
 
-            dr.Close();
+                    object result = cmd.ExecuteScalar();
+
+                    if (result != null && result != DBNull.Value)
+                    {
+                        stock = Convert.ToInt32(result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al verificar stock: " + ex.Message);
+                return false;
+            }
 
             return stock > 0;
         }
