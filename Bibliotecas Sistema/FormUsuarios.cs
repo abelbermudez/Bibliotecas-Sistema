@@ -152,29 +152,45 @@ namespace Bibliotecas_Sistema
 
         private void dgvusuarios_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (dgvusuarios.CurrentRow == null) return;
+            if (e.RowIndex < 0 || dgvusuarios.CurrentRow == null) return;
 
-            idUsuario = Convert.ToInt32(dgvusuarios.CurrentRow.Cells["IdUsuario"].Value);
-            idPerfil = dgvusuarios.CurrentRow.Cells["IdPerfil"].Value == DBNull.Value ? 0 :
-                       Convert.ToInt32(dgvusuarios.CurrentRow.Cells["IdPerfil"].Value);
+            var row = dgvusuarios.CurrentRow;
 
-            txtUsuario.Text = dgvusuarios.CurrentRow.Cells["Usuario"].Value.ToString();
-            cmbRoles.Text = dgvusuarios.CurrentRow.Cells["NombreRol"].Value.ToString();
+            // 2. Manejo de IDs (Uso de funciones de ayuda o validación manual)
+            idUsuario = row.Cells["IdUsuario"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["IdUsuario"].Value) : 0;
 
-            txtDNI.Text = dgvusuarios.CurrentRow.Cells["Dni"].Value?.ToString();
-            txtPrimerNombre.Text = dgvusuarios.CurrentRow.Cells["PrimerNombre"].Value?.ToString();
-            txtSegundoNombre.Text = dgvusuarios.CurrentRow.Cells["SegundoNombre"].Value?.ToString();
-            txtPrimerApellido.Text = dgvusuarios.CurrentRow.Cells["PrimerApellido"].Value?.ToString();
-            txtSegundoApellido.Text = dgvusuarios.CurrentRow.Cells["SegundoApellido"].Value?.ToString();
-            txtNumeroDocumento.Text = dgvusuarios.CurrentRow.Cells["NumeroDocumento"].Value?.ToString();
-            txtCorreo.Text = dgvusuarios.CurrentRow.Cells["Correo"].Value?.ToString();
-            txtTelefono.Text = dgvusuarios.CurrentRow.Cells["Telefono"].Value?.ToString();
-            txtDirección.Text = dgvusuarios.CurrentRow.Cells["Direccion"].Value?.ToString();
+            idPerfil = row.Cells["IdPerfil"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["IdPerfil"].Value) : 0;
 
-            if (dgvusuarios.CurrentRow.Cells["FechaNacimiento"].Value != DBNull.Value)
-                dateTimePicker1.Value = Convert.ToDateTime(dgvusuarios.CurrentRow.Cells["FechaNacimiento"].Value);
+            // 3. Textos con operador null-conditional y ToString() seguro
+            txtUsuario.Text = row.Cells["Usuario"].Value?.ToString() ?? "";
+            cmbRoles.Text = row.Cells["NombreRol"].Value?.ToString() ?? "";
 
-            checkBox1.Checked = Convert.ToBoolean(dgvusuarios.CurrentRow.Cells["Activo"].Value);
+            txtDNI.Text = row.Cells["Dni"].Value?.ToString() ?? "";
+            txtPrimerNombre.Text = row.Cells["PrimerNombre"].Value?.ToString() ?? "";
+            txtSegundoNombre.Text = row.Cells["SegundoNombre"].Value?.ToString() ?? "";
+            txtPrimerApellido.Text = row.Cells["PrimerApellido"].Value?.ToString() ?? "";
+            txtSegundoApellido.Text = row.Cells["SegundoApellido"].Value?.ToString() ?? "";
+            txtNumeroDocumento.Text = row.Cells["NumeroDocumento"].Value?.ToString() ?? "";
+            txtCorreo.Text = row.Cells["Correo"].Value?.ToString() ?? "";
+            txtTelefono.Text = row.Cells["Telefono"].Value?.ToString() ?? "";
+            txtDirección.Text = row.Cells["Direccion"].Value?.ToString() ?? "";
+
+            // 4. Fecha de Nacimiento (Punto crítico de error)
+            if (row.Cells["FechaNacimiento"].Value != DBNull.Value && row.Cells["FechaNacimiento"].Value != null)
+            {
+                dateTimePicker1.Value = Convert.ToDateTime(row.Cells["FechaNacimiento"].Value);
+            }
+            else
+            {
+                dateTimePicker1.Value = DateTime.Now; // O una fecha por defecto
+            }
+
+            // 5. CheckBox (Punto crítico de error)
+            // El error común es que SQL devuelve DBNull en lugar de true/false si el campo permite nulos
+            if (row.Cells["Activo"].Value != DBNull.Value)
+                checkBox1.Checked = Convert.ToBoolean(row.Cells["Activo"].Value);
+            else
+                checkBox1.Checked = false;
         }
 
         private void bnteliminar_Click(object sender, EventArgs e)

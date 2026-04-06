@@ -130,6 +130,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UsuarioLogueado.cs" />
     <EmbeddedResource Include="Formacercade.resx">
       <DependentUpon>Formacercade.cs</DependentUpon>
     </EmbeddedResource>

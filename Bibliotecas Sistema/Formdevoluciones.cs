@@ -13,8 +13,7 @@ namespace Bibliotecas_Sistema
 {
     public partial class Formdevoluciones : Form
     {
-        DataTable dtUsuarios = new DataTable();
-        DataTable dtLibros = new DataTable();
+        
         public Formdevoluciones()
         {
             InitializeComponent();
@@ -54,74 +53,9 @@ namespace Bibliotecas_Sistema
             }
             dgvdevo.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
-        void CargarUsuarios()
-        {
-            try
-            {
-                dtUsuarios.Clear();
-
-                using (SqlConnection cn = Conexion.GetOpenConnection())
-                {
-                    SqlDataAdapter da = new SqlDataAdapter(
-                        "SELECT IdPerfil, PrimerNombre + ' ' + PrimerApellido AS Nombre FROM Tbl_Perfiles",
-                        cn);
-
-                    da.Fill(dtUsuarios);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al cargar usuarios: " + ex.Message);
-            }
-        }
-        void CargarLibross()
-        {
-            try
-            {
-                dtLibros.Clear();
-                using (SqlConnection cn = Conexion.GetOpenConnection())
-                {
-                    SqlDataAdapter da = new SqlDataAdapter("SELECT IdLibro, Titulo FROM Tbl_Libros", cn);
-                    da.Fill(dtLibros);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al cargar libros: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        void AgregarComboss()
-        {
-            if (dgvdevo.Columns.Contains("cmbUsuario"))
-                dgvdevo.Columns.Remove("cmbUsuario");
-
-            if (dgvdevo.Columns.Contains("cmbLibro"))
-                dgvdevo.Columns.Remove("cmbLibro");
-
-            // 🔥 USUARIO
-            DataGridViewComboBoxColumn cmbUsuario = new DataGridViewComboBoxColumn();
-            cmbUsuario.Name = "cmbUsuario";
-            cmbUsuario.DataSource = dtUsuarios;
-            cmbUsuario.DisplayMember = "Nombre";
-            cmbUsuario.ValueMember = "IdPerfil";
-            cmbUsuario.DataPropertyName = "IdUsuario";
-            cmbUsuario.HeaderText = "Usuario";
-            cmbUsuario.DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing;
-
-            dgvdevo.Columns.Add(cmbUsuario);
-
-            // 🔥 LIBRO
-            DataGridViewComboBoxColumn cmbLibro = new DataGridViewComboBoxColumn();
-            cmbLibro.Name = "cmbLibro";
-            cmbLibro.DataSource = dtLibros;
-            cmbLibro.DisplayMember = "Titulo";
-            cmbLibro.ValueMember = "IdLibro";
-            cmbLibro.DataPropertyName = "IdLibro";
-            cmbLibro.HeaderText = "Libro";
-            cmbLibro.DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing;
-
-            dgvdevo.Columns.Add(cmbLibro);
-        }
+        
+        
+        
 
         private void dgvdevolver_Click(object sender, EventArgs e)
         {
@@ -226,10 +160,8 @@ namespace Bibliotecas_Sistema
 
         private void Formdevoluciones_Load(object sender, EventArgs e)
         {
-            CargarUsuarios();   // 1
-            CargarLibross();    // 2
             MostrarPendientes();// 3
-            AgregarComboss();   // 4
+            
         }
     }
 }
