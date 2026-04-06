@@ -6,7 +6,7 @@ namespace Bibliotecas_Sistema
     {
         // Corrige la cadena de conexión: nombre de instancia sin '.' y formato estándar
         private static readonly string ConnectionString =
-            "Data Source=JOSEGFONSECA;Initial Catalog=Bibliotecas Sistema;Integrated Security=True;";
+            "Data Source=LAPTOP-PF0SV0IO\\SQLEXPRESS;Initial Catalog=Bibliotecas Sistema;Integrated Security=True;";
 
         // Objeto compartido (si lo usa en varios lugares). Alternativamente use GetOpenConnection().
         public static SqlConnection cn = new SqlConnection(ConnectionString);
