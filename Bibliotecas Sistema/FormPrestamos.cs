@@ -81,11 +81,17 @@ namespace Bibliotecas_Sistema
             using (SqlConnection cn = Conexion.GetOpenConnection())
             {
                 SqlDataAdapter da = new SqlDataAdapter(
-                    "SELECT IdPerfil, PrimerNombre + ' ' + PrimerApellido AS Nombre FROM Tbl_Perfiles",
-                    cn);
+                @"SELECT 
+            U.IdUsuario,
+            P.PrimerNombre + ' ' + P.PrimerApellido AS Nombre
+          FROM Tbl_Usuarios U
+          INNER JOIN Tbl_Perfiles P ON U.IdUsuario = P.IdUsuario",
+                cn);
+
                 da.Fill(dtUsuarios);
             }
         }
+
 
         void CargarLibros()
         {
@@ -114,7 +120,7 @@ namespace Bibliotecas_Sistema
             cmbUsuario.Name = "cmbUsuario";
             cmbUsuario.DataSource = dtUsuarios;
             cmbUsuario.DisplayMember = "Nombre";
-            cmbUsuario.ValueMember = "IdPerfil";
+            cmbUsuario.ValueMember = "IdUsuario"; 
             cmbUsuario.DataPropertyName = "IdUsuario";
             cmbUsuario.HeaderText = "Usuario";
             dgvprestamos.Columns.Add(cmbUsuario);
