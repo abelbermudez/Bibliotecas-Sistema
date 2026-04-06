@@ -35,10 +35,11 @@ namespace Bibliotecas_Sistema
                 if (Conexion.cn.State == System.Data.ConnectionState.Closed)
                     Conexion.cn.Open();
 
-                string query = @"SELECT U.IdUsuario, R.NombreRol
-                             FROM Tbl_Usuarios U
-                             INNER JOIN Tbl_Roles R ON U.IdRol = R.IdRol
-                             WHERE U.Usuario=@u AND U.Clave=@c AND U.Activo=1";
+                string query = @"SELECT U.IdUsuario, P.IdPerfil, R.NombreRol 
+                 FROM Tbl_Usuarios U 
+                 INNER JOIN Tbl_Roles R ON U.IdRol = R.IdRol 
+                 LEFT JOIN Tbl_Perfiles P ON U.IdUsuario = P.IdUsuario 
+                 WHERE U.Usuario=@u AND U.Clave=@c AND U.Activo=1";
 
                 SqlCommand cmd = new SqlCommand(query, Conexion.cn);
                 cmd.Parameters.AddWithValue("@u", txtusuario.Text);
@@ -50,6 +51,8 @@ namespace Bibliotecas_Sistema
                 {
                     IdUsuarioLogueado = Convert.ToInt32(dr["IdUsuario"]);
                     RolUsuario = dr["NombreRol"].ToString();
+
+                    UsuarioLogueado.IdPerfil = dr["IdPerfil"] != DBNull.Value ? Convert.ToInt32(dr["IdPerfil"]) : 0;
 
                     dr.Close();
 
@@ -79,6 +82,7 @@ namespace Bibliotecas_Sistema
             {
                 MessageBox.Show("Error: " + ex.Message);
             }
+
         }
 
         private void limpiarCampos(TextBox txtusuario, TextBox txtcontraseña)
