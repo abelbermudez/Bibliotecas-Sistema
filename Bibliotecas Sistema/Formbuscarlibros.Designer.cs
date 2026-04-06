@@ -41,6 +41,7 @@
             this.dgvBuscar.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvBuscar.Location = new System.Drawing.Point(12, 12);
             this.dgvBuscar.Name = "dgvBuscar";
+            this.dgvBuscar.ReadOnly = true;
             this.dgvBuscar.Size = new System.Drawing.Size(776, 150);
             this.dgvBuscar.TabIndex = 0;
             // 

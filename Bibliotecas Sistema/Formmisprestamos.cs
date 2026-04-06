@@ -22,8 +22,11 @@ namespace Bibliotecas_Sistema
             SqlDataAdapter da = new SqlDataAdapter(
                 "SELECT P.IdPrestamo, L.Titulo, P.Estado, P.FechaPrestamo " +
                 "FROM Tbl_Prestamos P " +
-                "INNER JOIN Tbl_Libros L ON P.IdLibro = L.IdLibro",
+                "INNER JOIN Tbl_Libros L ON P.IdLibro = L.IdLibro " +
+                "WHERE P.IdUsuario = @IdUsuario",
                 Conexion.cn);
+
+            da.SelectCommand.Parameters.AddWithValue("@IdUsuario", Formlogin.IdUsuarioLogueado);
 
             DataTable dt = new DataTable();
             da.Fill(dt);
